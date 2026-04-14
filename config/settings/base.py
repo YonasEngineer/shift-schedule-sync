@@ -45,8 +45,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # 'apps.shift'
-    'apps.shift.apps.ShiftConfig',
-    'apps.users.apps.UsersConfig'
+    # 'apps.shifts.apps.ShiftConfig',
+    'apps.users.apps.UsersConfig',
+    'apps.locations.apps.LocationsConfig',
+    'apps.worklogs.apps.WorklogsConfig',
+    'apps.availability.apps.AvailabilityConfig',
+    'apps.schedules.apps.SchedulesConfig',
+    'apps.swaps.apps.SwapsConfig',
+    'apps.notifications.apps.NotificationsConfig',
+    'apps.audit.apps.AuditConfig',
+    'apps.analytics.apps.AnalyticsConfig'
+
+
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
