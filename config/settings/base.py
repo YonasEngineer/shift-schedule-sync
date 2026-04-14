@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     'apps.swaps.apps.SwapsConfig',
     'apps.notifications.apps.NotificationsConfig',
     'apps.audit.apps.AuditConfig',
-    'apps.analytics.apps.AnalyticsConfig'
+    'apps.analytics.apps.AnalyticsConfig',
+    'apps.core'
 
 
 ]
