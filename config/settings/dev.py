@@ -6,7 +6,10 @@ import os
 # (Three .parent calls if you are in config/settings/dev.py)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-
+{
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": True
+}
 # # Read the .env file (you can point to specific paths dynamically)
 # # This actually loads variables from the .env file into the system environment
 # env.read_env(os.path.join(BASE_DIR, '.env.dev'))
@@ -24,9 +27,18 @@ DEBUG = env('DEBUG')
 SECRET_KEY = env('SECRET_KEY')
 PORT = env.int('PORT')
 
-
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]  # for development only
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# VERY IMPORTANT for cookies
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
 
+
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = False  # True in production (HTTPS)
 
 # DATABASES = {
 #     'default': {

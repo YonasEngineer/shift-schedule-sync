@@ -48,7 +48,7 @@ class Schedule(BaseModel):
     # updated_at = models.DateTimeField(auto_now=True)
 
 
-class Shift(models.Model):
+class Shift(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     location = models.ForeignKey(
@@ -70,8 +70,8 @@ class Shift(models.Model):
         max_length=20, choices=ShiftStatus.choices, default=ShiftStatus.DRAFT)
     is_premium = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    # created_at = models.DateTimeField(auto_now_add=True)
+    # updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "shifts"
@@ -80,19 +80,19 @@ class Shift(models.Model):
         ]
 
 
-class ShiftAssignment(models.Model):
+class ShiftAssignment(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     shift = models.ForeignKey(
         Shift, on_delete=models.CASCADE, related_name="assignments")
     user = models.ForeignKey(
-        "users.CustomUser", on_delete=models.CASCADE, related_name="assignments")
+        "users.CustomUser", on_delete=models.CASCADE, related_name="shift_assignments")
 
     status = models.CharField(
         max_length=30, choices=AssignmentStatus.choices, default=AssignmentStatus.ASSIGNED)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    # created_at = models.DateTimeField(auto_now_add=True)
+    # updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "shift_assignments"

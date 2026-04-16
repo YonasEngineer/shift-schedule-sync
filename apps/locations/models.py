@@ -18,8 +18,8 @@ class Location(BaseModel):
     timezone = models.CharField(max_length=100)
     address = models.TextField(null=True, blank=True)
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    # created_at = models.DateTimeField(auto_now_add=True)
+    # updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "locations"
@@ -28,7 +28,7 @@ class Location(BaseModel):
         return f'{self.name} {(self.timezone)}'
 
 
-class UserLocation(models.Model):
+class UserLocation(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         "users.CustomUser", on_delete=models.CASCADE, related_name="user_locations")
@@ -37,6 +37,8 @@ class UserLocation(models.Model):
     role = models.CharField(max_length=20, choices=UserLocationRole.choices)
     is_certified = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"{self.user} - {self.location} ({self.role})"
     # created_at = models.DateTimeField(auto_now_add=True)
     # updated_at = models.DateTimeField(auto_now=True)
 

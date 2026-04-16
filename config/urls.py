@@ -19,6 +19,9 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('shift/', include('apps.shift.urls')),
-    path('users/', include('apps.users.urls'))
+    path('api/v1/users/', include('apps.users.urls')),
+    path('api/v1/schedule/', include('apps.schedules.urls')),
+    path('api/v1/location/<uuid:user_id>', include('apps.locations.urls')),
+    path('api/v1/swaps/', include('apps.swaps.urls'))
+
 ]

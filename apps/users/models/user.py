@@ -1,12 +1,18 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from apps.core.models.base import BaseModel
+from typing import TYPE_CHECKING
+from django.db.models.query import QuerySet
 
 
 class Role(models.TextChoices):
     ADMIN = 'admin', 'Admin'
     VENDOR = 'vendor', 'Vendor'
     CUSTOMER = 'customer', 'Customer'
+
+
+if TYPE_CHECKING:
+    from apps.schedules.models import ShiftAssignment
 
 
 class CustomUser(AbstractUser, BaseModel):
@@ -28,6 +34,7 @@ class CustomUser(AbstractUser, BaseModel):
     REQUIRED_FIELDS = ['username']
     email = models.EmailField(unique=True,)
     # This controls which columns appear in the table list
+    shift_assignments: QuerySet["ShiftAssignment"]
 
     class Meta:
         db_table = 'users'

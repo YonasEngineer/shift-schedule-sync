@@ -55,7 +55,8 @@ INSTALLED_APPS = [
     'apps.notifications.apps.NotificationsConfig',
     'apps.audit.apps.AuditConfig',
     'apps.analytics.apps.AnalyticsConfig',
-    'apps.core'
+    'apps.core',
+    'corsheaders'
 
 
 ]
@@ -66,6 +67,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

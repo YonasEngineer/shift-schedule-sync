@@ -1,7 +1,7 @@
 from django.urls import path
-
 from . import views
 
 urlpatterns = [
-    path("create-swap/",  views.create_swap)
+    path('', views.get_manager_location)
+
 ]

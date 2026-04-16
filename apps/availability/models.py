@@ -10,8 +10,8 @@ class AvailabilityRecurring(BaseModel):
         "users.CustomUser", on_delete=models.CASCADE, related_name="recurring_availabilities")
 
     day_of_week = models.IntegerField()
-    start_time = models.TimeField()
-    end_time = models.TimeField()
+    start_time = models.TimeField(blank=True, null=True)
+    end_time = models.TimeField(blank=True, null=True)
     timezone = models.CharField(max_length=100)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -30,7 +30,7 @@ class AvailabilityException(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
-
+    is_full_day = models.BooleanField(default=False)
     # created_at = models.DateTimeField(auto_now_add=True)
     # updated_at = models.DateTimeField(auto_now=True)
 
