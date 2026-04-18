@@ -11,7 +11,7 @@ from apps.users.models.skill import Skill
 from django.db.models import Prefetch
 from django.db import transaction
 from apps.schedules.models import ShiftAssignment, AssignmentStatus
-
+from apps.realtime.services.shift_events import send_shift_to_user
 
 # @csrf_exempt
 
@@ -195,7 +195,7 @@ def create_shift(request: HttpRequest) -> HttpResponse:
         end_time = data.get("endTime")
         required_skill_id = data.get("requiredSkillId")
         required_headcount = data.get("requiredHeadcount", 1)
-        is_premium = data.get("is_premium", False)
+        is_premium = data.get("isPremium", False)
 
         # -------------------------
         # Validate required fields
@@ -270,6 +270,7 @@ def create_shift(request: HttpRequest) -> HttpResponse:
                 )
 
     # Create assignments (if any)
+                assignments = []
                 if assignedUserIds:
                     users = CustomUser.objects.filter(id__in=assignedUserIds)
 
@@ -285,7 +286,31 @@ def create_shift(request: HttpRequest) -> HttpResponse:
                         )
                         for user in users
                     ])
+                    assignments = ShiftAssignment.objects.filter(shift=shift).select_related(
+                        "shift__location",
+                        "shift__required_skill"
+                    )
+            for sa in assignments:
+                payload = {
+                    "id": str(sa.id),
+                    "status": sa.status,
+                    "shift": {
+                        "id": str(sa.shift.id),
+                        "startTime": sa.shift.start_time.isoformat(),
+                        "endTime": sa.shift.end_time.isoformat(),
 
+                        "location": {
+                            "id": str(sa.shift.location.id),
+                            "name": sa.shift.location.name,
+                        },
+                        "requiredSkill": {
+                            "id": str(sa.shift.required_skill.id),
+                            "name": sa.shift.required_skill.name,
+                        },
+                    },
+                }
+
+                send_shift_to_user(sa.user_id, payload)
             return JsonResponse({
                 "message": "Shift created successfully",
                 "shift": {
@@ -306,6 +331,28 @@ def create_shift(request: HttpRequest) -> HttpResponse:
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+# build payload per user (like get_shifts format)
+
+
+# def build_shift_payload(shift, user):
+#     return {
+#         "id": None,  # assignment id (we’ll fill below)
+#         "status": "ASSIGNED",
+#         "shift": {
+#             "id": shift.id,
+#             "startTime": shift.start_time,
+#             "endTime": shift.end_time,
+#             "location": {
+#                 "id": shift.location.id,
+#                 "name": shift.location.name,
+#             },
+#             "requiredSkill": {
+#                 "id": shift.required_skill.id,
+#                 "name": shift.required_skill.name,
+#             },
+#         },
+#     }
 
 
 def get_shifts(request: HttpRequest) -> HttpResponse:

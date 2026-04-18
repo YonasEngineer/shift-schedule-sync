@@ -198,21 +198,21 @@ class Command(BaseCommand):
         AvailabilityRecurring.objects.bulk_create([
             AvailabilityRecurring(
                 user=staff1,
-                day_of_week=4,
+                day_of_week=6,
                 start_time="11:00",
                 end_time="18:00",
                 timezone="America/Los_Angeles",
             ),
             AvailabilityRecurring(
                 user=staff2,
-                day_of_week=4,
+                day_of_week=6,
                 start_time="11:00",
                 end_time="20:00",
                 timezone="America/Los_Angeles",
             ),
             AvailabilityRecurring(
                 user=staff3,
-                day_of_week=5,
+                day_of_week=6,
                 start_time="21:00",
                 end_time="23:00",
                 timezone="America/New_York",
