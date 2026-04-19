@@ -15,7 +15,6 @@ from django.utils.dateparse import parse_datetime
 # Create your views here.
 
 
-# @csrf_exempt
 def register(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         try:
@@ -124,8 +123,8 @@ def get_available_staff(request: HttpRequest) -> JsonResponse:
         "availability_exceptions",
     ).distinct()
     # print("see the staff", staff)
-    for staff1 in staff:
-        print(staff1)
+    # for staff1 in staff:
+    #     print(staff1)
 
     try:
         location = Location.objects.get(id=location_id)

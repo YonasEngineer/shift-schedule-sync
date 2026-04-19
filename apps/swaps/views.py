@@ -24,7 +24,6 @@ User = get_user_model()
 def create_swap(request: HttpRequest) -> JsonResponse:
     try:
         body = json.loads(request.body)
-        print("see the swap requested data", body)
         shift_id = body.get("shiftId")
         swap_type = body.get("type")
         target_user_id = body.get("targetUserId")
@@ -179,8 +178,6 @@ def accept_swap(request: HttpRequest, swap_id: str) -> HttpResponse:
         # 1. Fetch swap with related shift
         swap = SwapRequest.objects.select_related("shift").get(id=swap_id)
 
-        print("see the swap", swap)
-
         # Validation: swap exists
         if not swap:
             return JsonResponse({"error": "Swap request not found"}, status=404)
@@ -207,8 +204,6 @@ def accept_swap(request: HttpRequest, swap_id: str) -> HttpResponse:
             swap.status = "ACCEPTED"
             # swap.processed_at = timezone.now()  # optional
             swap.save()
-
-            print("see the updated swap", swap)
 
             # --- OPTIONAL LOGIC (same as your JS comments) ---
 
@@ -281,7 +276,6 @@ def manager_approve(request: HttpRequest) -> HttpResponse:
             swap = SwapRequest.objects.select_related(
                 "shift", "requester", "target_user"
             ).filter(id=swap_id).first()
-            print("see the swap>>>>>>>>>>>>>>>>>>.", swap)
             if not swap or not swap.target_user:
                 return JsonResponse({"error": "Swap not found or no target user"}, status=404)
 

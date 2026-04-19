@@ -12,8 +12,9 @@ from django.db.models import Prefetch
 from django.db import transaction
 from apps.schedules.models import ShiftAssignment, AssignmentStatus
 from apps.realtime.services.shift_events import send_shift_to_user
-
-# @csrf_exempt
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .serializers.shift_serializer import ShiftAssignmentSerializer
 
 
 def create_schedule(request: HttpRequest) -> HttpResponse:
@@ -98,7 +99,8 @@ def get_schedule(request: HttpRequest) -> HttpResponse:
     # 1. Fetch objects (use select_related to make the join efficient)
     # schedules = Schedule.objects.filter(
     #     creator_id=request.user.id).select_related('location', 'creator')
-
+    print("see the request>>>>>>>>>>>>>>>>>>>>>>>>.",
+          request.user.has_perm("schedules.change_shift"))
     schedules = (
         Schedule.objects
         .filter(creator_id=request.user.id)
@@ -372,7 +374,7 @@ def get_shifts(request: HttpRequest) -> HttpResponse:
     result = [
         {
             "id": sa.id,
-            "status": sa.status,
+            "status": sa.get_status_display(),
             "shift": {
                 "id": sa.shift.id,
                 "startTime": sa.shift.start_time,
@@ -407,3 +409,23 @@ def get_shifts(request: HttpRequest) -> HttpResponse:
         for sa in data
     ]
     return JsonResponse(result, safe=False)
+
+
+# below is the
+class ShiftList(APIView):
+    def get(self, request):
+        data = ShiftAssignment.objects.filter(
+            user_id=request.user.id,
+            status__in=["ASSIGNED", "PENDING_SWAP"]
+        ).select_related(
+            "shift",
+            "shift__location",
+            "shift__required_skill",
+        ).prefetch_related(
+            "shift__swap_requests",
+            "shift__swap_requests__requester",
+            "shift__swap_requests__target_user",
+        )
+
+        serializer = ShiftAssignmentSerializer(data, many=True)
+        return Response(serializer.data)

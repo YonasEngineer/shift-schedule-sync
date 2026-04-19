@@ -1,6 +1,4 @@
 from django.db import models
-import uuid
-
 from apps.core.models.base import BaseModel
 
 
