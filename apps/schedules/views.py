@@ -13,8 +13,11 @@ from django.db import transaction
 from apps.schedules.models import ShiftAssignment, AssignmentStatus
 from apps.realtime.services.shift_events import send_shift_to_user
 from rest_framework.views import APIView
+from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from .serializers.shift_serializer import ShiftAssignmentSerializer
+from celery import shared_task
+from rest_framework import status
 
 
 def create_schedule(request: HttpRequest) -> HttpResponse:
@@ -312,7 +315,10 @@ def create_shift(request: HttpRequest) -> HttpResponse:
                     },
                 }
 
+                add.delay(5, 6)
                 send_shift_to_user(sa.user_id, payload)
+
+                # Here lets start the background job
             return JsonResponse({
                 "message": "Shift created successfully",
                 "shift": {
@@ -355,6 +361,10 @@ def create_shift(request: HttpRequest) -> HttpResponse:
 #             },
 #         },
 #     }
+
+@shared_task
+def add(x, y):
+    print("the sum  of x and y is:", x + y)
 
 
 def get_shifts(request: HttpRequest) -> HttpResponse:
@@ -412,8 +422,11 @@ def get_shifts(request: HttpRequest) -> HttpResponse:
 
 
 # below is the
-class ShiftList(APIView):
-    def get(self, request):
+
+# Here we can use ModelViewSet(to implement CRUD), APIView, ListCreateAPIView  instead of  APIView
+class ShiftList(ViewSet):
+    def list(self, request):
+        print("see the  staff shift>>>>>>>>>>>>>")
         data = ShiftAssignment.objects.filter(
             user_id=request.user.id,
             status__in=["ASSIGNED", "PENDING_SWAP"]
@@ -428,4 +441,4 @@ class ShiftList(APIView):
         )
 
         serializer = ShiftAssignmentSerializer(data, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)

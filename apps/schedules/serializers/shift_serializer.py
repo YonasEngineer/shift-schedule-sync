@@ -6,12 +6,6 @@ from apps.locations.models import Location
 from apps.swaps.models import SwapRequest
 
 
-# class ShiftSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Shift
-#         fields = "__all__"
-
-
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
@@ -27,22 +21,28 @@ class SkillSerializer(serializers.ModelSerializer):
 class UserSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["id", "name"]
+        fields = ["id", "username"]
 
 
 class SwapRequestSerializer(serializers.ModelSerializer):
     requester = UserSimpleSerializer()
-    target_user = UserSimpleSerializer()
+    # target_user = UserSimpleSerializer()
+    targetUser = UserSimpleSerializer(source="target_user")
 
     class Meta:
         model = SwapRequest
-        fields = ["id", "requester", "target_user"]
+        fields = ["id", "requester", "targetUser"]
 
 
 class ShiftSerializer(serializers.ModelSerializer):
     location = LocationSerializer()
-    required_skill = SkillSerializer()
-    swap_requests = SwapRequestSerializer(many=True)
+    # required_skill = SkillSerializer()
+    # swap_requests = SwapRequestSerializer(many=True)
+
+    swapRequests = SwapRequestSerializer(source="swap_requests", many=True)
+    requiredSkill = SkillSerializer(source="required_skill")
+    startTime = serializers.DateTimeField(source="start_time")
+    endTime = serializers.DateTimeField(source="end_time")
 
     class Meta:
         model = Shift
@@ -51,8 +51,8 @@ class ShiftSerializer(serializers.ModelSerializer):
             "startTime",
             "endTime",
             "location",
-            "requiredSkill",
             "swapRequests",
+            "requiredSkill",
         ]
 
 

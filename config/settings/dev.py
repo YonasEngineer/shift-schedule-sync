@@ -30,7 +30,7 @@ PORT = env.int('PORT')
 # CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]  # for development only
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']  # put this in  the .env
 # VERY IMPORTANT for cookies
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",

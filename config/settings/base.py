@@ -57,10 +57,63 @@ INSTALLED_APPS = [
     'apps.analytics.apps.AnalyticsConfig',
     'apps.core',
     'corsheaders',
-    'channels'
+    'channels',
 
-
+    # DRF
+    'rest_framework',
+    # 'rest_framework_simplejwt',  # For JWT authentication
+    'rest_framework.authtoken',  # this is used for token based authentication
 ]
+
+
+# below is suthentication using token,  similarly you can have basicAuthentication and SessionAuthentication
+REST_FRAMEWORK = {
+
+    #  #= Below is used to JWT based authetication
+    # 'DEFAULT_AUTHENTICATION_CLASSES': [
+    #     'rest_framework_simplejwt.authentication.JWTAuthentication',
+    # ],
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ],
+    # Below is used to token based authetication
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+
+    # Below is used to session based and Basic authetication
+    # REST_FRAMEWORK = {
+    #     'DEFAULT_AUTHENTICATION_CLASSES': [
+    #         'rest_framework.authentication.BasicAuthentication',
+    #         'rest_framework.authentication.SessionAuthentication',
+    #     ]
+    # }
+
+
+    # Below is used to session based  authetication
+    # REST_FRAMEWORK = {
+    #     'DEFAULT_AUTHENTICATION_CLASSES': [
+    #         'rest_framework.authentication.SessionAuthentication',
+    #     ]
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ],
+    # }
+
+    # Below is used to basic  authetication
+
+    # REST_FRAMEWORK = {
+    #     'DEFAULT_AUTHENTICATION_CLASSES': [
+    #         'rest_framework.authentication.BasicAuthentication',
+    #     ]
+    # 'DEFAULT_PERMISSION_CLASSES': [
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ],
+    # }
+}
 
 AUTH_USER_MODEL = 'users.CustomUser'
 

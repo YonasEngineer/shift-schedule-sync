@@ -11,6 +11,12 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.contrib.auth import authenticate, login
 from datetime import datetime
 from django.utils.dateparse import parse_datetime
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
 
 # Create your views here.
 
@@ -43,24 +49,69 @@ def register(request: HttpRequest) -> HttpResponse:
 
 
 # @csrf_exempt
+# def login_view(request: HttpRequest) -> HttpResponse:
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             print("see the login data", data)
+#             email = data.get('email')
+#             password = data.get('password')
+#             if not email or not password:
+#                 return JsonResponse({'error': 'Missing credentials'}, status=400)
+#               # authenticate user
+#             user = authenticate(request, username=email, password=password)
+#             print("see the logged in user userDetail", user)
+#             print(user.id)
+#             print(user.email)
+#             print(user.username)
+#             if user is None:
+#                 return JsonResponse({'error': 'Invalid credentials'}, status=401)
+#             login(request, user)
+
+#             data = {"user": {
+#                 "id": user.id,
+#                 "username": user.username,
+#                 "email": user.email,
+#                 "phone_number": user.phone_number,
+#                 "role": user.role,
+#             }}
+#             return JsonResponse(data)
+#             # return JsonResponse({'message': "Logged in successfully"}, status=200)
+
+#             # if not user:
+#             #     return JsonResponse({'error': "AN authorized"}, status=403)
+#             # else:
+#             #     return JsonResponse({'message': "logged in successfully"}, status=200)
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=400)
+
+#     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def login_view(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            print("see the login data", data)
-            email = data.get('email')
-            password = data.get('password')
+            # data = json.loads(request.body)
+            # print("see the login data", data)
+            # email = data.get('email')
+            # password = data.get('password')
+            email = request.data.get('email')
+            password = request.data.get('password')
             if not email or not password:
                 return JsonResponse({'error': 'Missing credentials'}, status=400)
               # authenticate user
+            print('above the user')
             user = authenticate(request, username=email, password=password)
-            print("see the logged in user userDetail", user)
-            print(user.id)
-            print(user.email)
-            print(user.username)
-            if user is None:
-                return JsonResponse({'error': 'Invalid credentials'}, status=401)
-            login(request, user)
+            print('below the user', user)
+
+            if not user:
+                return Response({"error": "Invalid credentials"}, status=400)
+
+            token, _ = Token.objects.get_or_create(user=user)
+            print("see the token >>>>>>>>>>>>..", token)
+            # login(request, user)
 
             data = {"user": {
                 "id": user.id,
@@ -68,8 +119,10 @@ def login_view(request: HttpRequest) -> HttpResponse:
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "role": user.role,
+                "token": token.key
             }}
-            return JsonResponse(data)
+            return Response(data, status=200)
+            # return JsonResponse(data)
             # return JsonResponse({'message': "Logged in successfully"}, status=200)
 
             # if not user:
@@ -77,9 +130,11 @@ def login_view(request: HttpRequest) -> HttpResponse:
             # else:
             #     return JsonResponse({'message': "logged in successfully"}, status=200)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+            print("ERROR >>>>>>>", str(e))
+            # return JsonResponse({'error': str(e)}, status=400)
+            return Response({'error': str(e)}, status=400)
 
-    return JsonResponse({'error': 'Invalid request method'}, status=405)
+    return Response({'error': 'Invalid request method'}, status=405)
 
 
 @ensure_csrf_cookie
