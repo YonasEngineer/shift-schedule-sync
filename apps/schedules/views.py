@@ -2,7 +2,9 @@ from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.dateparse import parse_datetime
 import json
+# from pprint import pprint
 # import uuid
+# from pprint import pprint
 from django.contrib.auth import get_user_model
 from .models import Schedule, ScheduleStatus, Shift, ShiftStatus
 from apps.locations.models import Location
@@ -12,72 +14,165 @@ from django.db.models import Prefetch
 from django.db import transaction
 from apps.schedules.models import ShiftAssignment, AssignmentStatus
 from apps.realtime.services.shift_events import send_shift_to_user
-from rest_framework.views import APIView
+from rest_framework.views import APIView  # BASE CLASS FOR all classbased views
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from .serializers.shift_serializer import ShiftAssignmentSerializer
 from celery import shared_task
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from .models import Schedule
+from .serializers.schedule_serializer import ScheduleReadSerializer, ScheduleCreateSerializer
 from rest_framework import status
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
+from rest_framework.generics import ListCreateAPIView
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 
+@api_view(["POST", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
 def create_schedule(request: HttpRequest) -> HttpResponse:
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST method allowed"}, status=405)
-
-    try:
-        # print("User Object:", request.user)
-        # print("User ID:", request.user.id)
-        # print("User Email:", request.user.email)
-
-        data = json.loads(request.body)
-        print("see the shift detail", data)
-        # print("schedule data", data)
-        location_id = data.get("locationId")
-        week_start = data.get("weekStart")
-        publish_cutoff_hours = data.get("publish_cutoff_hours", 48)
-
-        # Validate required fields
-        if not location_id or not week_start:
-            return JsonResponse(
-                {"error": "location_id and week_start are required"},
-                status=400
-            )
-
-        # Get location
+    if request.method == "POST":
+        # return JsonResponse({"error": "Only POST method allowed"}, status=405)
         try:
-            location = Location.objects.get(id=location_id)
-        except Location.DoesNotExist:
-            return JsonResponse({"error": "Location not found"}, status=404)
+            print("see the request data?????????????//", request.data)
+            serializer = ScheduleCreateSerializer(data=request.data)
 
-        # Parse datetime
-        week_start_dt = parse_datetime(week_start)
-        if not week_start_dt:
-            return JsonResponse({"error": "Invalid week_start format"}, status=400)
+            # if serializer.is_valid():
+            #     serializer.validated_data()
+            #     return Response(serializer.data)
+            # else:
+            #     return Response(serializer.errors, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            #  The above is  can be written in better way
+            serializer.is_valid(raise_exception=True)
+            print(" serializer.validated_data()>>>>>>>>..",
+                  serializer.validated_data)
+            # serializer.save()
+            schedule = serializer.save(creator=request.user)
 
-        # Create schedule
-        schedule = Schedule.objects.create(
-            location=location,
-            creator=request.user,
-            week_start=week_start_dt,
-            status=ScheduleStatus.DRAFT,
-            publish_cutoff_hours=publish_cutoff_hours
-        )
+            # serializer.validated_data
+            # serializer
+            # return Response(serializer.data)
+            return Response(ScheduleReadSerializer(schedule).data, status=201)
 
-        return JsonResponse({
-            "message": "Schedule created successfully",
-            "schedule": {
-                "id": str(schedule.id),
-                "location": str(schedule.location_id),
-                "week_start": schedule.week_start,
-                "status": schedule.status,
-            }
-        }, status=201)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == "PUT":
+        try:
+            schedule_id = request.data.get(
+                "id") or request.data.get("scheduleId")
+            if not schedule_id:
+                return Response(
+                    {"error": "id or scheduleId is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+            schedule = Schedule.objects.filter(
+                id=schedule_id,
+                creator=request.user
+            ).first()
 
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+            if not schedule:
+                return Response(
+                    {"error": "Schedule not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            serializer = ScheduleCreateSerializer(schedule, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            schedule = serializer.save()
+
+            return Response(ScheduleReadSerializer(schedule).data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == "DELETE":
+        try:
+            schedule_id = (
+                request.data.get("id")
+                or request.data.get("scheduleId")
+                or request.query_params.get("id")
+                or request.query_params.get("scheduleId")
+            )
+            if not schedule_id:
+                return Response(
+                    {"error": "id or scheduleId is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            schedule = Schedule.objects.filter(
+                id=schedule_id,
+                creator=request.user
+            ).first()
+
+            if not schedule:
+                return Response(
+                    {"error": "Schedule not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            schedule.delete()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # try:
+    #     # print("User Object:", request.user)
+    #     # print("User ID:", request.user.id)
+    #     # print("User Email:", request.user.email)
+
+    #     data = json.loads(request.body)
+    #     print("see the shift detail", data)
+    #     print("see the request.user",  request.user)
+    #     # print("schedule data", data)
+    #     location_id = data.get("locationId")
+    #     week_start = data.get("weekStart")
+    #     publish_cutoff_hours = data.get("publish_cutoff_hours", 48)
+
+    #     # Validate required fields
+    #     if not location_id or not week_start:
+    #         return JsonResponse(
+    #             {"error": "location_id and week_start are required"},
+    #             status=400
+    #         )
+
+    #     # Get location
+    #     try:
+    #         location = Location.objects.get(id=location_id)
+    #     except Location.DoesNotExist:
+    #         return JsonResponse({"error": "Location not found"}, status=404)
+
+    #     # Parse datetime
+    #     week_start_dt = parse_datetime(week_start)
+    #     if not week_start_dt:
+    #         return JsonResponse({"error": "Invalid week_start format"}, status=400)
+
+    #     # Create schedule
+    #     schedule = Schedule.objects.create(
+    #         location=location,
+    #         creator=request.user,
+    #         week_start=week_start_dt,
+    #         status=ScheduleStatus.DRAFT,
+    #         publish_cutoff_hours=publish_cutoff_hours
+    #     )
+
+    #     return JsonResponse({
+    #         "message": "Schedule created successfully",
+    #         "schedule": {
+    #             "id": str(schedule.id),
+    #             "location": str(schedule.location_id),
+    #             "week_start": schedule.week_start,
+    #             "status": schedule.status,
+    #         }
+    #     }, status=201)
+
+    # except json.JSONDecodeError:
+    #     return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    # except Exception as e:
+    #     return JsonResponse({"error": str(e)}, status=500)
 
 
 # def get_schedule(request: HttpRequest) -> HttpResponse:
@@ -97,26 +192,122 @@ def create_schedule(request: HttpRequest) -> HttpResponse:
 #     print("see the schedule data", data)
 #     return JsonResponse(data, safe=False)
 
+# Below is get schedule  using class based view
+# class ScheduleList(APIView):
 
+#     def get(self, request):
+#         try:  # yOU CAN USE get_object_or_404  instead of try except
+#             querySet = (
+#                 Schedule.objects
+#                 .filter(creator_id=request.user.id)
+#                 .select_related("location", "creator")
+#                 .prefetch_related(
+#                     Prefetch(
+#                         "shifts",
+#                         queryset=Shift.objects.select_related("required_skill").prefetch_related(
+#                             "assignments__user"
+#                         )
+#                     )
+#                 )
+#             )
+#             serializer = ScheduleReadSerializer(querySet, many=True)
+#             return Response(serializer.data)
+#         except Schedule.DoesNotExist:
+#             return Response(status=status.HTTP_404_NOT_FOUND)
+
+#     def post(self, request):
+#         return "ok"
+
+# we can replace the above class with generic view below
+class ScheduleList(ListCreateAPIView):
+
+    # queryset = querySet = (
+    #     Schedule.objects
+    #     .filter(creator_id=self.request.user.id)
+    #     .select_related("location", "creator")
+    #     .prefetch_related(
+    #         Prefetch(
+    #             "shifts",
+    #             queryset=Shift.objects.select_related("required_skill").prefetch_related(
+    #                 "assignments__user"
+    #             )
+    #         )
+    #     )
+    # )
+    serializer_class = ScheduleReadSerializer
+
+    # we use below 2 method  if we need some logic otherwise use the above
+    def get_queryset(self):
+        return (
+            Schedule.objects
+            .filter(creator_id=self.request.user.id)
+            .select_related("location", "creator")
+            .prefetch_related(
+                Prefetch(
+                    "shifts",
+                    queryset=Shift.objects.select_related("required_skill").prefetch_related(
+                        "assignments__user"
+                    )
+                )
+            )
+        )
+
+    # def get_serializer_class(self, *args, **kwargs):
+    #     return ScheduleCreateSerializer
+
+    # def get_serializer_context(self):
+    #     return {'request': self.request}
+
+
+# View set is generic set
+class ScheduleViewSet(ModelViewSet):
+
+    serializer_class = ScheduleReadSerializer
+
+    # we use below 2 method  if we need some logic otherwise use the above
+    def get_queryset(self):
+        return (
+            Schedule.objects
+            .filter(creator_id=self.request.user.id)
+            .select_related("location", "creator")
+            .prefetch_related(
+                Prefetch(
+                    "shifts",
+                    queryset=Shift.objects.select_related("required_skill").prefetch_related(
+                        "assignments__user"
+                    )
+                )
+            )
+        )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def get_schedule(request: HttpRequest) -> HttpResponse:
     # 1. Fetch objects (use select_related to make the join efficient)
     # schedules = Schedule.objects.filter(
     #     creator_id=request.user.id).select_related('location', 'creator')
     print("see the request>>>>>>>>>>>>>>>>>>>>>>>>.",
           request.user.has_perm("schedules.change_shift"))
-    schedules = (
-        Schedule.objects
-        .filter(creator_id=request.user.id)
-        .select_related("location", "creator")
-        .prefetch_related(
-            Prefetch(
-                "shifts",
-                queryset=Shift.objects.select_related("required_skill").prefetch_related(
-                    "assignments__user"
+    print("see the request user", request.user)
+    try:  # yOU CAN USE get_object_or_404  instead of try except
+        querySet = (
+            Schedule.objects
+            .filter(creator_id=request.user.id)
+            .select_related("location", "creator")
+            .prefetch_related(
+                Prefetch(
+                    "shifts",
+                    queryset=Shift.objects.select_related("required_skill").prefetch_related(
+                        "assignments__user"
+                    )
                 )
             )
         )
-    )
+        serializer = ScheduleReadSerializer(querySet, many=True)
+        return Response(serializer.data)
+    except Schedule.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     # 2. Manually build the nested structure
     # data = [
     #     {
@@ -135,59 +326,62 @@ def get_schedule(request: HttpRequest) -> HttpResponse:
     # ]
 
     # return JsonResponse(data, safe=False)
-    data = []
+    # data = []
 
-    for s in schedules:
-        schedule_data = {
-            "status": s.status,
-            "publish_cutoff_hours": s.publish_cutoff_hours,
-            "scheduleId": s.id,
-            "weekStart": s.week_start,
-            "createdBy": s.creator.email,
-            "location": {
-                "id": s.location.id,
-                "name": s.location.name,
-                "timeZone": s.location.timezone
-            },
-            "shifts": []
-        }
+    # for s in schedules:
+    #     schedule_data = {
+    #         "status": s.status,
+    #         "publish_cutoff_hours": s.publish_cutoff_hours,
+    #         "scheduleId": s.id,
+    #         "weekStart": s.week_start,
+    #         "createdBy": s.creator.email,
+    #         "location": {
+    #             "id": s.location.id,
+    #             "name": s.location.name,
+    #             "timeZone": s.location.timezone
+    #         },
+    #         "shifts": []
+    #     }
 
-        for shift in s.shifts.all():
-            shift_data = {
-                "shiftId": shift.id,
-                "startTime": shift.start_time,
-                "endTime": shift.end_time,
-                "status": shift.status,
-                "isPremium": shift.is_premium,
-                "requiredHeadcount": shift.required_headcount,
-                "requiredSkill": {
-                    "id": shift.required_skill.id,
-                    "name": shift.required_skill.name,
-                },
-                "assignments": []
-            }
+    #     for shift in s.shifts.all():
+    #         shift_data = {
+    #             "shiftId": shift.id,
+    #             "startTime": shift.start_time,
+    #             "endTime": shift.end_time,
+    #             "status": shift.status,
+    #             "isPremium": shift.is_premium,
+    #             "requiredHeadcount": shift.required_headcount,
+    #             "requiredSkill": {
+    #                 "id": shift.required_skill.id,
+    #                 "name": shift.required_skill.name,
+    #             },
+    #             "assignments": []
+    #         }
 
-            for assignment in shift.assignments.all():
-                shift_data["assignments"].append({
-                    "assignmentId": assignment.id,
-                    "status": assignment.status,
-                    "user": {
-                        "id": assignment.user.id,
-                        "email": assignment.user.email,
-                        "firstName": assignment.user.first_name,
-                        "lastName": assignment.user.last_name,
+    #         for assignment in shift.assignments.all():
+    #             shift_data["assignments"].append({
+    #                 "assignmentId": assignment.id,
+    #                 "status": assignment.status,
+    #                 "user": {
+    #                     "id": assignment.user.id,
+    #                     "email": assignment.user.email,
+    #                     "firstName": assignment.user.first_name,
+    #                     "lastName": assignment.user.last_name,
 
-                    }
-                })
+    #                 }
+    #             })
 
-            schedule_data["shifts"].append(shift_data)
+    #         schedule_data["shifts"].append(shift_data)
 
-        data.append(schedule_data)
+    #     data.append(schedule_data)
+    # print("see the schedule data?>>>>>>>>>>>>>>>>>>.", data)
+    # return JsonResponse(data, safe=False)
 
-    return JsonResponse(data, safe=False)
 
-
+@api_view(["POST"])
+# @permission_classes([IsAuthenticated])
 def create_shift(request: HttpRequest) -> HttpResponse:
+    print("see the request.user during create shift", request.user)
     if request.method != "POST":
         return JsonResponse({"error": "Only POST method allowed"}, status=405)
 
@@ -425,20 +619,25 @@ def get_shifts(request: HttpRequest) -> HttpResponse:
 
 # Here we can use ModelViewSet(to implement CRUD), APIView, ListCreateAPIView  instead of  APIView
 class ShiftList(ViewSet):
-    def list(self, request):
-        print("see the  staff shift>>>>>>>>>>>>>")
-        data = ShiftAssignment.objects.filter(
-            user_id=request.user.id,
-            status__in=["ASSIGNED", "PENDING_SWAP"]
-        ).select_related(
-            "shift",
-            "shift__location",
-            "shift__required_skill",
-        ).prefetch_related(
-            "shift__swap_requests",
-            "shift__swap_requests__requester",
-            "shift__swap_requests__target_user",
-        )
 
-        serializer = ShiftAssignmentSerializer(data, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def list(self, request):
+
+        print("see the  staff shift>>>>>>>>>>>>>")
+        try:
+            data = ShiftAssignment.objects.filter(
+                user_id=request.user.id,
+                status__in=["ASSIGNED", "PENDING_SWAP"]
+            ).select_related(
+                "shift",
+                "shift__location",
+                "shift__required_skill",
+            ).prefetch_related(
+                "shift__swap_requests",
+                "shift__swap_requests__requester",
+                "shift__swap_requests__target_user",
+            )
+
+            serializer = ShiftAssignmentSerializer(data, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ShiftAssignment.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)

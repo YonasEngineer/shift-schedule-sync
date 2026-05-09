@@ -50,4 +50,9 @@ def get_manager_location(request: HttpRequest, user_id: str):
         timezone=F('location__timezone')
     ))
 
+
+# rename locationId → id
+    for item in data:
+        item["id"] = item.pop("locationId")
+
     return JsonResponse({"locations": data}, safe=False)

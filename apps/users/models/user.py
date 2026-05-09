@@ -50,8 +50,5 @@ class UserPreference(BaseModel):
         CustomUser, on_delete=models.CASCADE, related_name="preferences")
     desired_hours_per_week = models.IntegerField()
 
-    # created_at = models.DateTimeField(auto_now_add=True)
-    # updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
         db_table = "user_preferences"

@@ -36,6 +36,7 @@ class SwapRequestSerializer(serializers.ModelSerializer):
 
 class ShiftSerializer(serializers.ModelSerializer):
     location = LocationSerializer()
+    test = serializers.HyperlinkedRelatedField
     # required_skill = SkillSerializer()
     # swap_requests = SwapRequestSerializer(many=True)
 
